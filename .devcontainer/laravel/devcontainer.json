@@ -1,0 +1,29 @@
+{
+  "name": "Laravel DevContainer",
+  "dockerComposeFile": "../../docker-compose.yml",
+  "service": "lms",
+  "workspaceFolder": "/var/www/html",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "amiralizadeh9480.laravel-extra-intellisense",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "formulahendry.code-runner",
+        "DEVSENSE.composer-php-vscode",
+        "DEVSENSE.phptools-vscode",
+        "DEVSENSE.profiler-php-vscode",
+        "DEVSENSE.intelli-php-vscode",
+        "shufo.vscode-blade-formatter",
+        "onecentlin.laravel-blade",
+        "rangav.vscode-thunder-client",
+        "Gruntfuggly.todo-tree"
+      ],
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      }
+    }
+  },
+  "postCreateCommand": "composer install && npm install"
+}

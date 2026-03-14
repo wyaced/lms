@@ -1,0 +1,10 @@
+numpy
+pandas
+pyBKT
+scikit-learn
+matplotlib
+shap
+fastapi
+pydantic
+joblib
+uvicorn
