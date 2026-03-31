@@ -35,19 +35,18 @@ def trainModel(df):
     return bktSkillParams
 
 
-def initializeMastery(userIds, skillParams: Sequence[BktSkillParam]):
+def initializeMastery(userId: int, skillParams: Sequence[BktSkillParam]):
     masteryRecords = []
 
-    for userId in userIds:
-        for skillParam in skillParams:
-            masteryRecords.append(
-                {
-                    "user_id": userId,
-                    "skill_id": skillParam.skill_id,
-                    "skill_name": skillParam.skill_name,
-                    "mastery": skillParam.prior,
-                }
-            )
+    for skillParam in skillParams:
+        masteryRecords.append(
+            {
+                "user_id": userId,
+                "skill_id": skillParam.skill_id,
+                "skill_name": skillParam.skill_name,
+                "mastery": skillParam.prior,
+            }
+        )
 
     return masteryRecords
 

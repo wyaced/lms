@@ -32,7 +32,7 @@ services:
     environment:
       DB_CONNECTION: mysql
       DB_HOST: db
-      DB_PORT: ${MYSQL_PORT}
+      DB_PORT: 3306
       DB_DATABASE: ${MYSQL_DATABASE}
       DB_USERNAME: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}

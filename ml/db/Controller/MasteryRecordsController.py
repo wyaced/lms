@@ -1,7 +1,7 @@
 from db import db
 from db.Controller.BktSkillParamsController import BktSkillParamsController
 from db.Models.BktSkillParam import BktSkillParam
-from db.Models.MasteryRecord import MasteryRecord
+from db.Models.MasteryRecord import MasteryRecord, MasteryRecordSchema
 from db.Models.QuestionResponse import QuestionResponse
 from typing import Sequence
 import models.bkt.bkt as bkt
@@ -49,7 +49,7 @@ class MasteryRecordsController:
     def getMasteryRecords(cls, session):
         masteryRecords = session.scalars(sa.select(MasteryRecord)).all()
 
-        return masteryRecords
+        return [MasteryRecordSchema.from_orm(record) for record in masteryRecords]
 
     @classmethod
     def updateMasteryRecord(

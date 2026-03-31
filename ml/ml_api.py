@@ -12,6 +12,12 @@ app = FastAPI()
 engine = db.getEngine()
 
 
+def serialize(obj):
+    data = obj.__dict__.copy()
+    data.pop("_sa_instance_state", None)
+    return data
+
+
 # Endpoints ===
 # Example endpoint
 @app.get("/predict")
@@ -52,32 +58,45 @@ def trainBkt():
 
 
 @app.get("/mastery-init")
-def masteryInit():
+def masteryInit(userId: int):
     with orm.Session(engine) as session:
-        unrecordedQuestionResponses = (
-            QuestionResponseController.getUnrecordedQuestionResponses(session=session)
-        )
-        userIds = {
-            unrecordedQuestionResponse.user_id
-            for unrecordedQuestionResponse in unrecordedQuestionResponses
-        }
-
         skillParams = BktSkillParamsController.getBktSkillParams(session=session)
 
         initialMasteryRecords = bkt.initializeMastery(
-            userIds=userIds, skillParams=skillParams
+            userId=userId, skillParams=skillParams
         )
         MasteryRecordsController.upsertMasteryRecords(
             masteryRecords=initialMasteryRecords, session=session
-        )
-
-        MasteryRecordsController.updateMasteryRecords(
-            unrecordedQuestionResponses=unrecordedQuestionResponses, session=session
         )
 
         masteryRecords = MasteryRecordsController.getMasteryRecords(session=session)
 
     return masteryRecords
 
+
+@app.get("/update-mastery-record")
+def updateMasteryRecord(questionResponseId: int):
+    with orm.Session(engine) as session:
+        questionResponse = QuestionResponseController.getQuestionResponse(questionResponseId=questionResponseId, session=session)
+        bktSkillParams = BktSkillParamsController.getBktSkillParam(skillId=questionResponse.skill_id, session=session)
+
+        MasteryRecordsController.updateMasteryRecord(questionResponse=questionResponse, bktSkillParams=bktSkillParams, session=session)
+
+        masteryRecords = MasteryRecordsController.getMasteryRecords(session=session)
+
+    return masteryRecords
+
+@app.get("/update-mastery-records")
+def updateMasteryRecords():
+    with orm.Session(engine) as session:
+        unrecordedQuestionResponses = QuestionResponseController.getUnrecordedQuestionResponses(session=session)
+
+        for questionResponse in unrecordedQuestionResponses:
+            bktSkillParams = BktSkillParamsController.getBktSkillParam(skillId=questionResponse.skill_id, session=session)
+            MasteryRecordsController.updateMasteryRecord(questionResponse=questionResponse, bktSkillParams=bktSkillParams, session=session)
+
+        masteryRecords = MasteryRecordsController.getMasteryRecords(session=session)
+
+    return masteryRecords
 
 # ===

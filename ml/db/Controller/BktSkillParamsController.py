@@ -1,5 +1,5 @@
 from db import db
-from db.Models.BktSkillParam import BktSkillParam
+from db.Models.BktSkillParam import BktSkillParam, BktSkillParamSchema
 from db.Models.Skill import Skill
 import sqlalchemy as sa
 
@@ -49,7 +49,7 @@ class BktSkillParamsController:
     def getBktSkillParams(cls, session):
         bktSkillParams = session.scalars(sa.select(BktSkillParam)).all()
 
-        return bktSkillParams
+        return [BktSkillParamSchema.from_orm(param) for param in bktSkillParams]
 
     @classmethod
     def getBktSkillParam(cls, skillId, session):

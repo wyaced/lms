@@ -5,14 +5,16 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    zip unzip git curl
+    libicu-dev \
+    libzip-dev \
+    zip unzip git curl \
+    && docker-php-ext-install pdo pdo_mysql intl zip
+    # && apt-get clean \
+    # && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (for Vite)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
-
-# Install MySQL PHP extension
-RUN docker-php-ext-install pdo pdo_mysql
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

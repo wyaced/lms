@@ -37,12 +37,11 @@ class QuestionResponseController:
         return unrecordedQuestionResponses
 
     @classmethod
-    def getQuestionResponse(cls, questionResponseId):
-        with orm.Session(engine) as session:
-            questionResponse = session.scalars(
-                sa.select(QuestionResponse).where(
-                    QuestionResponse.id == questionResponseId
-                )
-            ).first()
+    def getQuestionResponse(cls, questionResponseId, session):
+        questionResponse = session.scalars(
+            sa.select(QuestionResponse).where(
+                QuestionResponse.id == questionResponseId
+            )
+        ).first()
 
         return questionResponse
