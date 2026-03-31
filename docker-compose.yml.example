@@ -1,0 +1,72 @@
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: lms_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lms
+
+  lms:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: lms_app
+    restart: always
+    ports:
+      - "${APP_PORT}:8000"
+      - "${VITE_PORT}:5173" # Vite dev
+    volumes:
+      - ./src:/var/www/html
+    command: ["sh", "-c", "composer install --ignore-platform-reqs && exec php artisan serve --host=0.0.0.0 --port=8000"]
+    depends_on:
+      - db
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+    env_file:
+      - .env
+    networks:
+      - lms
+
+  python:
+    build:
+      context: ./docker/python
+      dockerfile: Dockerfile
+    container_name: lms_py
+    ports:
+      - "${PY_PORT}:8001"
+    volumes:
+      - ./ml:/app
+    command: ["uvicorn", "ml_api:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      FASTAPI_PORT: ${PY_PORT}
+    networks:
+      - lms
+
+volumes:
+  db_data:
+
+networks:
+  lms:
+    driver: bridge
