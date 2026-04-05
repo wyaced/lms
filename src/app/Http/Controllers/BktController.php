@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessUpdateMasteryRecords;
+use App\Models\MasteryBatchUpdateLog;
 use App\Models\MasteryRecords;
 use App\Models\QuestionResponse;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class BktController extends Controller
@@ -65,19 +68,37 @@ class BktController extends Controller
     }
 
     public function updateMasteryRecords() {
-        QuestionResponse::where('mastery_is_recorded', false)
-            ->select('id')
-            ->chunkById(10, function ($unrecordedQuestionResponses) {
-                foreach ($unrecordedQuestionResponses as $unrecordedQuestionResponse) {
-                    $this->updateMasteryRecord($unrecordedQuestionResponse->id, true);
-                }
-            });
+        $runId = MasteryBatchUpdateLog::create([
+            "status" => "running",
+            "started_at" => now(),
+        ])->id;
 
-        $masteryRecords = MasteryRecords::orderBy('updated_at','desc')->limit(100)->get();
+        ProcessUpdateMasteryRecords::dispatch($runId);
 
         return response()->json([
             "status" => 200,
-            "body" => $masteryRecords,
+            "run_id" => $runId,
+            "message" => "Mastery update started",
+        ]);
+    }
+
+    public function masteryBatchUpdateCallback(Request $request) {
+        $request->validate([
+            "runId" => "required|integer",
+            "status" => "required|string",
+            "error" => "nullable|string",
+        ]);
+
+        DB::table("mastery_batch_update_logs")->where("id", $request->input("runId"))->update([
+            "status" => $request->input("status"),
+            "error" => $request->input("error"),
+            "finished_at" => now(),
+            "updated_at" => now(),
+        ]);
+
+        return response()->json([
+            "status" => 200,
+            "message" => "Callback received",
         ]);
     }
 }

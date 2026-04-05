@@ -3,13 +3,15 @@ from db.Controller.BktSkillParamsController import BktSkillParamsController
 from db.Controller.MasteryRecordsController import MasteryRecordsController
 from db.Controller.UserController import UserController
 from db.Controller.QuestionResponseController import QuestionResponseController
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from models.bkt import bkt
+import requests
 import sqlalchemy.orm as orm
 
 
 app = FastAPI()
 engine = db.getEngine()
+lmsUrl = "http://lms:8000"
 
 
 def serialize(obj):
@@ -77,26 +79,61 @@ def masteryInit(userId: int):
 @app.get("/update-mastery-record")
 def updateMasteryRecord(questionResponseId: int):
     with orm.Session(engine) as session:
-        questionResponse = QuestionResponseController.getQuestionResponse(questionResponseId=questionResponseId, session=session)
-        bktSkillParams = BktSkillParamsController.getBktSkillParam(skillId=questionResponse.skill_id, session=session)
+        questionResponse = QuestionResponseController.getQuestionResponse(
+            questionResponseId=questionResponseId, session=session
+        )
+        bktSkillParams = BktSkillParamsController.getBktSkillParam(
+            skillId=questionResponse.skill_id, session=session
+        )
 
-        MasteryRecordsController.updateMasteryRecord(questionResponse=questionResponse, bktSkillParams=bktSkillParams, session=session)
+        MasteryRecordsController.updateMasteryRecord(
+            questionResponse=questionResponse,
+            bktSkillParams=bktSkillParams,
+            session=session,
+        )
 
         masteryRecords = MasteryRecordsController.getMasteryRecords(session=session)
 
     return masteryRecords
+
+
+def runBatchUpdateMasteryRecords(runId: int):
+    callbackUrl = f"{lmsUrl}/api/mastery-batch-update-callback"
+
+    try:
+        with orm.Session(engine) as session:
+            unrecordedQuestionResponses = (
+                QuestionResponseController.getUnrecordedQuestionResponses(
+                    session=session
+                )
+            )
+
+            for questionResponse in unrecordedQuestionResponses:
+                bktSkillParams = BktSkillParamsController.getBktSkillParam(
+                    skillId=questionResponse.skill_id, session=session
+                )
+                MasteryRecordsController.updateMasteryRecord(
+                    questionResponse=questionResponse,
+                    bktSkillParams=bktSkillParams,
+                    session=session,
+                )
+
+        requests.post(
+            callbackUrl,
+            json={"runId": runId, "status": "success", "error": None},
+        )
+
+    except Exception as e:
+        requests.post(
+            callbackUrl,
+            json={"runId": runId, "status": "failed", "error": str(e)},
+        )
+
 
 @app.get("/update-mastery-records")
-def updateMasteryRecords():
-    with orm.Session(engine) as session:
-        unrecordedQuestionResponses = QuestionResponseController.getUnrecordedQuestionResponses(session=session)
+async def updateMasteryRecords(runId: int, background_tasks: BackgroundTasks):
+    background_tasks.add_task(runBatchUpdateMasteryRecords, runId=runId)
+    return {"message": "Batch update started", "runId": runId}
 
-        for questionResponse in unrecordedQuestionResponses:
-            bktSkillParams = BktSkillParamsController.getBktSkillParam(skillId=questionResponse.skill_id, session=session)
-            MasteryRecordsController.updateMasteryRecord(questionResponse=questionResponse, bktSkillParams=bktSkillParams, session=session)
-
-        masteryRecords = MasteryRecordsController.getMasteryRecords(session=session)
-
-    return masteryRecords
 
 # ===
